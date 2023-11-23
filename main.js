@@ -1,5 +1,33 @@
 const fs = require("fs");
 
+
+class Person {
+  constructor(name, age) {
+    this.name = name;
+    this.age = age;
+  }
+}
+
+// Class that holds a collection of players and properties and functions for the group
+class Persons {
+  constructor() {
+    this.Persons = []
+  }
+  // create a new player and save it in the collection
+  newPerson(name, age) {
+    let p = new Person(name, age)
+    this.Persons.push(p)
+    return p
+  }
+  get allPersons() {
+    return this.allPersons
+  }
+  // this could include summary stats like average score, etc. For simplicy, just the count for now
+  get numberOfPlayers() {
+    return this.allPersons.length
+  }
+}
+
 class Command {
   constructor(name, params) {
     this.name = name;
@@ -8,87 +36,177 @@ class Command {
 }
 
 function main() {
+
+  var books = [];
+  var keyCards = [];
+  let KeyNo = 1;
+
   const filename = "input.txt";
   const commands = getCommandsFromFileName(filename);
   let arr = [];
   for (const [key, value] of Object.entries(commands)) {
     command = value;
-    if(arr.includes(command.params[0]) && command.name === 'checkout' ){
-      continue;
-    }
     switch (command.name) {
       case "create_hotel":
         const [floor, roomPerFloor] = command.params;
         const hotel = { floor, roomPerFloor };
+        for (let f = 1; f <= floor; f++) {
+          for (let r = 1; r <= roomPerFloor; r++) {
+            var book = { floor: f, room: f * 100 + r, name: '', age: '', keyNo: '', status: '' };
+            books.push(book);
+            var keyCard = { keyNo: KeyNo++, room: '' }
+            keyCards.push(keyCard);
+          }
+        }
         console.log(`Hotel created with ${floor} floor(s), ${roomPerFloor} room(s) per floor.`);
         break;
+
       case "book":
-        const [room, name, numberCard] = command.params;
-        if(room === 203 && name === 'TonyStark'){
-          console.log(`Cannot book room ${room} for ${name}, The room is currently booked by Thor.`);
-        }else if(room === 103 && name === 'TonyStark'){
-          console.log(`Room ${room} is booked by ${name} with keycard number 4.`);
-        }else if(room === 101 && name === 'Thanos') {
-          console.log(`Cannot book room ${room} for Thanos, The room is currently booked by PeterParker.`);
-        }else{
-          console.log(`Room ${room} is booked by ${name} with keycard number ${numberCard}.`);
-        }
-        break;
-      case "list_available_rooms":
-          console.log(`103`);
-          break;
-      case "checkout":
-          const [number,nameCheckout] = command.params
-          if(number === 4){
-            console.log(`Room 201 is checkout.`);
-          }else if(number === 1){
-            console.log(`Only Thor can checkout with keycard number 1.`);
-          }else if(number === 5){
-            console.log(`Room 202 is checkout.`);
-            console.log(`Room 103 is checkout.`);
-          }
-          break;
-      case "list_guest":
-            console.log(`Thor, PeterParker, StephenStrange`);
-            break;
-      case "get_guest_in_room":
-            const [roomGuest] = command.params
-            if(roomGuest === 203){
-              console.log(`Thor`);
-            }
-            break;
-      case "list_guest_by_age":
-            const [roomAge,Age] = command.params
-            if(Age <= 18){
-              console.log(`PeterParker`);
-            }
-            break;
-      case "list_guest_by_floor":
-              const [guestFloor] = command.params
-              if(guestFloor === 2){
-                console.log(`Thor`);
-              }
-              break;
-      case "checkout_guest_by_floor":
-              const [GuestFloorCheckout] = command.params
-              if(GuestFloorCheckout === 1){
-                console.log(`Room 101, 102 are checkout.`);
-              }
-      case "book_by_floor":
-              const[bookByFloor,bookByName,bookByAge] = command.params
-              if(bookByFloor,bookByName,bookByAge !== undefined){
-                if(bookByFloor === 1){
-                  console.log(`Room 101, 102, 103 are booked with keycard number 2, 3, 4`);
-                }else if(bookByFloor === 2){
-                  console.log(`Cannot book floor ${bookByFloor === 2} for TonyStark.`);
+        const [room, name, age] = command.params;
+        for (let b = 0; b < books.length; b++) {
+          var keyNoUse = keyCards.filter(e => e.room === "").sort(function (a, b) { return a.keyNo - b.keyNo; });
+          if (books[b].room === room) {
+            if (books[b].keyNo === '') {
+              books[b].name = name;
+              books[b].age = age;
+              books[b].keyNo = keyNoUse[0].keyNo;
+
+              for (let k = 0; k < keyCards.length; k++) {
+                if (keyCards[k].keyNo === books[b].keyNo) {
+                  keyCards[k].room = books[b].room;
+                  console.log(`Room ${books[b].room} is booked by ${books[b].name} with keycard number ${books[b].keyNo}.`);
                 }
               }
-             
+            }
+            else {
+              console.log(`Cannot book room ${room} for ${name}, The room is currently booked by ${books[b].name}.`);
+            }
+          }
+        }
+        break;
+
+      case "list_available_rooms":
+        var bookAvailable = books.filter(e => e.keyNo === "").sort(function (a, b) { return a.room - b.room; });
+        console.log(bookAvailable.map(e => e.room));
+        break;
+
+      case "checkout":
+        const [keyNo, nameInfo] = command.params;
+
+        for (let b = 0; b < books.length; b++) {
+          if (books[b].keyNo === keyNo) {
+            if (books[b].name.trim() === nameInfo.trim()) {
+              for (let k = 0; k < keyCards.length; k++) {
+                if (keyCards[k].keyNo === keyNo) {
+                  console.log(`Room ${keyCards[k].room} is checkout.`);
+
+                  books[b].name = '';
+                  books[b].age = '';
+                  books[b].keyNo = '';
+                  keyCards[k].room = '';
+                }
+              }
+            }
+            else {
+              console.log(`Only ${books[b].name} can checkout with keycard number ${books[b].keyNo}.`);
+            }
+          }
+        }
+
+        break;
+
+      case "list_guest":
+        var bookInfos = books.filter(e => e.KeyNo !== "" && e.name !== '').sort(function (a, b) { return a.keyNo - b.keyNo; });
+        console.log(bookInfos.map(e => e.name));
+        break;
+
+      case "get_guest_in_room":
+        const [roomNo] = command.params;
+        console.log(books.filter(e => e.room === roomNo).map(e => e.name));
+        break;
+
+      case "list_guest_by_age":
+        const [compare, ageRange] = command.params;
+        if (compare === '=') {
+          console.log(books.filter(e => e.age === ageRange && e.name !== '').map(e => e.name));
+        }
+        else if (compare === '>') {
+          console.log(books.filter(e => e.age > ageRange && e.name !== '').map(e => e.name));
+        }
+        else if (compare === '<') {
+          console.log(books.filter(e => e.age < ageRange && e.name !== '').map(e => e.name));
+        }
+        break;
+
+      case "list_guest_by_floor":
+        const [floorNo] = command.params;
+        console.log(books.filter(e => e.floor === floorNo && e.name !== '').map(e => e.name));
+        break;
+
+      case "checkout_guest_by_floor":
+        const [floorCO] = command.params;
+        console.log(`Room ${books.filter(e => e.floor === floorCO && e.keyNo !== '').map(e => e.room)} are checkout.`);
+
+        for (let b = 0; b < books.length; b++) {
+          if (books[b].floor === floorCO) {
+            if (books[b].keyNo !== '') {
+              for (let k = 0; k < keyCards.length; k++) {
+                if (keyCards[k].keyNo !== '' && keyCards[k].keyNo === books[b].keyNo) {
+                  books[b].name = '';
+                  books[b].age = '';
+                  books[b].keyNo = '';
+                  keyCards[k].room = '';
+                }
+              }
+            }
+          }
+        }
+
+        break;
+
+      case "book_by_floor":
+
+        const [floorRef, nameData, ageInfo] = command.params;
+        var data = books.filter(e => e.floor === floorRef && e.keyNo !== '');
+        if (data.length > 0) {
+          console.log(`Cannot book floor  ${floorRef}  for  ${nameData} `);
+        }
+        else {
+          var roomRefs = [];
+          var keyRefs = [];
+
+          for (let b = 0; b < books.length; b++) {
+            if (books[b].floor === floorRef) {
+              var keyNoUse = keyCards.filter(e => e.room === "").sort(function (a, b) { return a.keyNo - b.keyNo; });
+
+              if (books[b].keyNo === '') {
+                books[b].name = nameData;
+                books[b].age = ageInfo;
+                books[b].keyNo = keyNoUse[0].keyNo;
+
+                for (let k = 0; k < keyCards.length; k++) {
+
+                  if (keyCards[k].keyNo === books[b].keyNo) {
+                    keyCards[k].room = books[b].room;
+
+                    var roomRef = { room: books[b].room };
+                    var keyRef = { keyNo: books[b].keyNo };
+
+                    roomRefs.push(roomRef);
+                    keyRefs.push(keyRef);
+
+                    canbook = true;
+                  }
+                }
+              }
+            }
+          }
+          console.log(`Room ${roomRefs.map(e => e.room)} are booked with keycard number ${keyRefs.map(e => e.keyNo)}`);
+        }
+        break;
     }
-    arr.push(command.params[0]);
   }
 }
-
 function getCommandsFromFileName(fileName) {
   const file = fs.readFileSync(fileName, "utf-8");
 
